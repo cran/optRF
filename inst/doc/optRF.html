@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Optimising random forest using optRF</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Optimising random forest using optRF</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This vignette serves as a quick-start guide for determining the
+optimal number of trees in a random forest using the <code>optRF</code>
+package. The <code>optRF</code> package was created to model the
+relationship between the number of trees and the resulting stability of
+the random forest and to use this model to determine the optimal number
+of trees from where on adding additional trees to the random forest
+would increase the computation time but would only marginally increase
+the stability. The <code>optRF</code> package depends on
+<code>ranger</code> for efficient random forest implementation. To
+demonstrate its functionality, we will use the <code>SNPdata</code> data
+set included in the <code>optRF</code> package. The <code>SNPdata</code>
+data set contains in the first column the yield of 250 wheat individuals
+as well as 5000 genomic markers (so called SNP markers) that can contain
+either the value 0 or 2:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(ranger)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(optRF)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>SNPdata[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#&gt;           Yield SNP_0001 SNP_0002 SNP_0003 SNP_0004</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; ID_001 670.7588        0        0        0        0</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt; ID_002 542.5611        0        2        0        0</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="co">#&gt; ID_003 591.6631        2        2        0        2</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co">#&gt; ID_004 476.3727        0        0        0        0</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co">#&gt; ID_005 635.9814        2        2        0        2</span></span></code></pre></div>
+</div>
+<div id="the-opt_prediction-function" class="section level2">
+<h2>The <code>opt_prediction</code> function</h2>
+<div id="optimising-random-forest-for-predictions" class="section level3">
+<h3>Optimising random forest for predictions</h3>
+<p>To determine the optimal number of trees for random forest
+predictions, the <code>opt_prediction</code> function from the
+<code>optRF</code> package can be used. For a detailed description of
+the <code>opt_prediction</code> function, please refer to its <a href="opt_prediction.html"><code>vignette</code></a>.</p>
+<p>As an example, let’s use the first 200 rows of the
+<code>SNPdata</code> data set as the training data and the last 50 rows
+as the test data:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>Training <span class="ot">=</span> SNPdata[<span class="dv">1</span><span class="sc">:</span><span class="dv">200</span>,] <span class="co"># Rows 1 to 200 as training data</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>Test <span class="ot">=</span> SNPdata[<span class="dv">201</span><span class="sc">:</span><span class="dv">250</span>,<span class="sc">-</span><span class="dv">1</span>] <span class="co"># Rows 201 to 250 as test data, excluding the response column (column 1)</span></span></code></pre></div>
+<p>To make the code reproducible, we will set a seed of <code>123</code>
+before using the <code>opt_prediction</code> function. This function
+identifies the optimal number of trees required for random forest to
+predict the response variable in the test data set. The response
+variable from the training data set is passed to the <code>y</code>
+argument, the predictor variables from the training data set are
+inserted in the <code>X</code> argument, and the predictor variables
+from the test data set are specified in the <code>X_Test</code>
+argument. Let’s also assume that we aim to select the 5 top performing
+individuals from the test data set which translates to the top 10% which
+has to be inserted in the <code>alpha</code> argument:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co"># Set a seed for reproducibility</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>optRF_result <span class="ot">=</span> <span class="fu">opt_prediction</span>(<span class="at">y=</span>Training[,<span class="dv">1</span>], <span class="at">X=</span>Training[,<span class="sc">-</span><span class="dv">1</span>], </span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>                              <span class="at">X_Test=</span>Test, <span class="at">alpha=</span><span class="fl">0.1</span>)</span></code></pre></div>
+<p>After running the <code>opt_prediction</code> function, the
+recommended number of trees and the expected stability of the random
+forest model can be easily accessed using the <code>summary</code>
+function:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">summary</span>(optRF_result)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; Recommended number of trees: 19000</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; Expected prediction stability: 0.9780626</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; Expected selection stability: 0.7137072</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; Expected computation time (sec): 1.662468</span></span></code></pre></div>
+<p>Here, the optimal number of trees to receive stable predictions is
+19,000 trees. Using random forest with this number of trees, one can
+expect a prediction stability of 0.98 which describes the correlation of
+the predicted response in repeated runs of random forest.</p>
+<p>With the optimal number of trees identified, random forest can now be
+used to predict the response variable in the test data set. For this,
+the <code>ranger</code> function can be used:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>RF_model <span class="ot">=</span> <span class="fu">ranger</span>(<span class="at">y=</span>Training[,<span class="dv">1</span>], <span class="at">x=</span>Training[,<span class="sc">-</span><span class="dv">1</span>], </span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>                  <span class="at">write.forest =</span> <span class="cn">TRUE</span>, <span class="at">num.trees=</span>optRF_result<span class="sc">$</span>recommendation)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>predictions <span class="ot">=</span> <span class="fu">predict</span>(RF_model, <span class="at">data=</span>Test)<span class="sc">$</span>predictions</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>predicted_Test_data <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">ID =</span> <span class="fu">row.names</span>(Test), <span class="at">predicted_response =</span> predictions)</span></code></pre></div>
+<p>The predictions for the test data set are now stored in the
+<code>predicted_Test_data</code> data frame which includes the IDs and
+their corresponding predicted responses.</p>
+</div>
+<div id="optimising-random-forest-for-prediction-based-decisions" class="section level3">
+<h3>Optimising random forest for prediction based decisions</h3>
+<p>Predicted values from random forest can support decision-making, such
+as selecting the top-performing individuals in a data set. To proceed,
+it is essential to define the number of top-performing individuals to be
+selected. For instance, suppose we aim to select the top 5 performers
+from a test data set containing 50 individuals.</p>
+<p>To evaluate the stability of random forest in supporting this
+selection decision, repeated runs of the model are performed. In each
+run, the top individuals are classified as <code>selected</code>, while
+the remaining individuals are classified as <code>rejected</code>. The
+selection stability is then quantified using Fleiss’ Kappa, which
+measures the consistency of these classifications across the repeated
+runs.</p>
+<p>To determine the optimal number of trees for selection, the argument
+<code>recommendation</code> has to be set to
+<code>&quot;selection&quot;</code>:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co"># Set a seed for reproducibility</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>optRF_result_2 <span class="ot">=</span> <span class="fu">opt_prediction</span>(<span class="at">y=</span>Training[,<span class="dv">1</span>], <span class="at">X=</span>Training[,<span class="sc">-</span><span class="dv">1</span>], <span class="at">X_Test=</span>Test,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>                                <span class="at">alpha=</span><span class="fl">0.1</span>, <span class="at">recommendation=</span><span class="st">&quot;selection&quot;</span>)</span></code></pre></div>
+<p>The recommended number of trees and the expected stability can be
+accessed as above:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">summary</span>(optRF_result_2)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; Recommended number of trees: 73000</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; Expected prediction stability: 0.9931893</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; Expected selection stability: 0.837301</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt; Expected computation time (sec): 7.015361</span></span></code></pre></div>
+<p>One can see that the recommended number of trees was increased to
+73,000 trees. Random forest can now be used with this number of trees to
+ensure stable predictions with a prediction stability of 0.993 and
+prediction based decisions with a selection stability of 0.837. In order
+to demonstrate the robustness of the predictions and decision-making
+process, the decisions from random forest should always be published
+together with the prediction and selection stability which can be seen
+in the output from <code>optRF_result$expected_RF_stability</code>
+above.</p>
+</div>
+</div>
+<div id="the-opt_importance-function" class="section level2">
+<h2>The <code>opt_importance</code> function</h2>
+<div id="optimising-random-forest-for-variable-importance-estimation" class="section level3">
+<h3>Optimising random forest for variable importance estimation</h3>
+<p>In addition to predictions, random forest can be used to estimate
+variable importance and select the most relevant variables in a data
+set. For variable selection, the <code>opt_importance</code> function
+from the <code>optRF</code> package can help determine the optimal
+number of trees for random forest. For a detailed explanation of the
+<code>opt_importance</code> function, please refer to its <a href="opt_importance.html"><code>vignette</code></a>.</p>
+<p>To make the code reproducible, we will set a seed of <code>123</code>
+before using the <code>opt_importance</code> function. This function
+identifies the optimal number of trees required to reliably estimate the
+importance of variables in a data set:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co"># Set a seed for reproducibility</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>optRF_result <span class="ot">=</span> <span class="fu">opt_importance</span>(<span class="at">y=</span>SNPdata[,<span class="dv">1</span>], <span class="at">X=</span>SNPdata[,<span class="sc">-</span><span class="dv">1</span>])</span></code></pre></div>
+<p>Once the <code>opt_importance</code> function is executed, the
+recommended number of trees and the stability metrics can be easily
+accessed:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">summary</span>(optRF_result)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; Recommended number of trees: 40000</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; Expected variable importance stability: 0.958165</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; Expected selection stability: 0.5856996</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; Expected computation time (sec): 6.641934</span></span></code></pre></div>
+<p>The results indicate that the optimal number of trees for estimating
+variable importance is 40,000. With this configuration, the variable
+importance stability is 0.96 which reflects the correlation of variable
+importance estimates across repeated runs of random forest.</p>
+<p>With the optimal number of trees determined, random forest can now be
+used to estimate variable importance. This can be achieved using the
+<code>ranger</code> function with permutation importance:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>RF_model <span class="ot">=</span> <span class="fu">ranger</span>(<span class="at">y=</span>SNPdata[,<span class="dv">1</span>], <span class="at">x=</span>SNPdata[,<span class="sc">-</span><span class="dv">1</span>], <span class="at">num.trees=</span>optRF_result<span class="sc">$</span>recommendation,</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>                  <span class="at">write.forest =</span> <span class="cn">TRUE</span>, <span class="at">importance=</span><span class="st">&quot;permutation&quot;</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>D_VI <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">variable =</span> <span class="fu">names</span>(SNPdata)[<span class="sc">-</span><span class="dv">1</span>], </span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>                  <span class="at">importance =</span> RF_model<span class="sc">$</span>variable.importance)</span></code></pre></div>
+<p>The variable importance results are now saved in the data frame
+<code>D_VI</code> which contains the variable names and the
+corresponding importance estimates.</p>
+</div>
+<div id="optimising-random-forest-for-variable-selection" class="section level3">
+<h3>Optimising random forest for variable selection</h3>
+<p>Now that we have obtained stable estimates of variable importance, we
+can use these estimates to select the most important variables from the
+data set. However, before proceeding, it is necessary to estimate how
+many variables in the data set significantly affect the response
+variable.</p>
+<p>One approach to achieve this is by visualising the distribution of
+variable importance estimates. A histogram provides an intuitive way to
+identify patterns such as a clear separation between important and less
+important variables:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">hist</span>(D_VI<span class="sc">$</span>importance, <span class="at">xlim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">10</span>, <span class="dv">50</span>), </span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>     <span class="at">main=</span><span class="st">&quot;Histogram of variable importances&quot;</span>, <span class="at">xlab=</span><span class="st">&quot;&quot;</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+<p>From the histogram, it is apparent that the majority of variables
+have importance values between -5 and 5. However, a small subset of
+variables exceeds an importance threshold of 5. These variables are
+likely to have a genuine impact on the response and should be selected
+for further analysis.</p>
+<p>Based on the histogram, we calculate the number of variables with
+importance values greater than 5:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>selection_size <span class="ot">=</span> <span class="fu">sum</span>(RF_model<span class="sc">$</span>variable.importance<span class="sc">&gt;</span><span class="dv">5</span>)</span></code></pre></div>
+<p>Using this number of selected variables, the optimal number of trees
+for random forest can be determined with the <code>opt_importance</code>
+function:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co"># Set a seed for reproducibility</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>optRF_result_2 <span class="ot">=</span> <span class="fu">opt_importance</span>(<span class="at">y=</span>SNPdata[,<span class="dv">1</span>], <span class="at">X=</span>SNPdata[,<span class="sc">-</span><span class="dv">1</span>], </span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>                                <span class="at">recommendation =</span> <span class="st">&quot;selection&quot;</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>                                <span class="at">alpha =</span> selection_size)</span></code></pre></div>
+<p>With the recommended number of trees, we re-estimate variable
+importance and select the top variables:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>RF_model_2 <span class="ot">=</span> <span class="fu">ranger</span>(<span class="at">y=</span>SNPdata[,<span class="dv">1</span>], <span class="at">x=</span>SNPdata[,<span class="sc">-</span><span class="dv">1</span>], <span class="at">num.trees=</span>optRF_result_2<span class="sc">$</span>recommendation,</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>                    <span class="at">write.forest =</span> <span class="cn">TRUE</span>, <span class="at">importance=</span><span class="st">&quot;permutation&quot;</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>D_VI_2 <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">variable =</span> <span class="fu">names</span>(SNPdata)[<span class="sc">-</span><span class="dv">1</span>], </span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>                    <span class="at">importance =</span> RF_model_2<span class="sc">$</span>variable.importance)</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>D_VI_2 <span class="ot">=</span> D_VI_2[<span class="fu">order</span>(D_VI_2<span class="sc">$</span>importance, <span class="at">decreasing=</span><span class="cn">TRUE</span>),]</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>selected_variables <span class="ot">=</span> D_VI_2[<span class="dv">1</span><span class="sc">:</span>selection_size,<span class="dv">1</span>]</span></code></pre></div>
+<p>The vector <code>selected_variables</code> now contains the names of
+the most important variables in the data set. To enhance reproducibility
+and reliability, the selection results should be published along with
+the variable importance stability and selection stability metrics. These
+can again be easily accessed:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">summary</span>(optRF_result_2)</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co">#&gt; Recommended number of trees: 49000</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; Expected variable importance stability: 0.9655379</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; Expected selection stability: 0.9207115</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; Expected computation time (sec): 8.950901</span></span></code></pre></div>
+</div>
+</div>
+<div id="conclusions" class="section level2">
+<h2>Conclusions</h2>
+<p>Random forest can be effectively used to predict the response
+variable in a test data set where only the predictor variables are
+known, and the predicted response values can be used to identify the
+top-performing individuals. Similarly, random forest can estimate the
+importance of variables in a data set and facilitate the selection of
+the most important variables. However, it must be noted that random
+forest is a non-deterministic method, meaning it can yield different
+results even when run on the same data set. To ensure the
+reproducibility and reliability of the results, it is essential to
+determine the optimal number of trees for random forest and use this to
+guide decision-making. Researchers are encouraged to evaluate the
+stability of their chosen tree count to ensure reliable and reproducible
+results when using random forest.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

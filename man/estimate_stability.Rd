@@ -21,7 +21,7 @@ A data frame summarising the estimated stability and run time in seconds for the
 Estimate the stability of random forest with certain numbers of trees
 }
 \examples{
-\donttest{
+\dontrun{
 data(SNPdata)
 set.seed(123)
 result_optpred = opt_prediction(y = SNPdata[,1], X=SNPdata[,-1]) # optimise random forest
