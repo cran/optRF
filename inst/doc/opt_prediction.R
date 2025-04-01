@@ -147,3 +147,20 @@ estimate_numtrees(optRF_result_2, measure="selection", for_stability=0.99)
 ## ----message=FALSE------------------------------------------------------------
 estimate_stability(optRF_result_2, with_num.trees=250000)
 
+## ----echo=FALSE, message=FALSE------------------------------------------------
+load("opt_prediction_vignette_stabilityData.Rda")
+
+## ----eval=FALSE, message=FALSE------------------------------------------------
+# set.seed(123)
+# stability_pred_500 = measure_stability(y = Training[,1], X=Training[,-1], X_Test=Test, num.trees=500, method="prediction")
+
+## ----message=FALSE------------------------------------------------------------
+stability_pred_500
+
+## ----eval=FALSE, message=FALSE------------------------------------------------
+# set.seed(123)
+# stability_pred_5000 = measure_stability(y = Training[,1], X=Training[,-1], X_Test=Test, num.trees=5000, method="prediction")
+
+## ----message=FALSE------------------------------------------------------------
+stability_pred_5000
+

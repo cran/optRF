@@ -145,7 +145,7 @@ sum(selected_variables_1 %in% selected_variables_2)
 
 ## ----fig.width=6, fig.height=4.5, fig.align='center'--------------------------
 plot_stability(optRF_result_2, measure="selection", 
-               0, 100000, add.recommendation = FALSE, ylim=c(0, 1))
+               0, 100000, add_recommendation = FALSE, ylim=c(0, 1))
 abline(h=1, col="red")
 
 ## ----message=FALSE------------------------------------------------------------
@@ -156,4 +156,21 @@ estimate_numtrees(optRF_result_2, measure="selection", for_stability = 0.999)
 
 ## ----message=FALSE------------------------------------------------------------
 estimate_stability(optRF_result_2, with_num.trees=500000)
+
+## ----echo=FALSE, message=FALSE------------------------------------------------
+load("opt_importance_vignette_stabilityData.Rda")
+
+## ----eval=FALSE, message=FALSE------------------------------------------------
+# set.seed(123)
+# stability_imp_500 = measure_stability(y = Training[,1], X=Training[,-1], X_Test=Test, num.trees=500, method="importance")
+
+## ----message=FALSE------------------------------------------------------------
+stability_imp_500
+
+## ----eval=FALSE, message=FALSE------------------------------------------------
+# set.seed(123)
+# stability_imp_10000 = measure_stability(y = Training[,1], X=Training[,-1], X_Test=Test, num.trees=10000, method="importance")
+
+## ----message=FALSE------------------------------------------------------------
+stability_imp_10000
 

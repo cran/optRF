@@ -78,3 +78,20 @@ selection_size = sum(RF_model$variable.importance>5)
 ## ----message=FALSE------------------------------------------------------------
 summary(optRF_result_2)
 
+## ----echo=FALSE, message=FALSE------------------------------------------------
+load("optRF_vignette_stabilityData.Rda")
+
+## ----eval=FALSE, message=FALSE------------------------------------------------
+# set.seed(123)
+# stability_prediction = measure_stability(y = Training[,1], X=Training[,-1], X_Test=Test, num.trees=5000, method="prediction")
+
+## ----message=FALSE------------------------------------------------------------
+stability_prediction
+
+## ----eval=FALSE, message=FALSE------------------------------------------------
+# set.seed(123)
+# stability_importance = measure_stability(y = Training[,1], X=Training[,-1], X_Test=Test, num.trees=5000, method="importance")
+
+## ----message=FALSE------------------------------------------------------------
+stability_importance
+
