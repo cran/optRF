@@ -700,14 +700,14 @@ stability is required, we can determine the number of trees necessary to
 achieve specific selection stability thresholds (e.g., 0.9, 0.95, or
 0.99) using the <code>estimate_numtrees</code> function:</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">estimate_numtrees</span>(optRF_result_2, <span class="at">measure=</span><span class="st">&quot;selection&quot;</span>, <span class="at">for_stability=</span><span class="fl">0.9</span>)</span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="co">#&gt;             selection_stability opt_numtrees computation_time</span></span>
-<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="co">#&gt; (Intercept)                 0.9       206116         139.4819</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="co">#&gt;   selection_stability opt_numtrees computation_time</span></span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="co">#&gt; 1                 0.9       206116         139.4819</span></span>
 <span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="fu">estimate_numtrees</span>(optRF_result_2, <span class="at">measure=</span><span class="st">&quot;selection&quot;</span>, <span class="at">for_stability=</span><span class="fl">0.95</span>)</span>
-<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co">#&gt;             selection_stability opt_numtrees computation_time</span></span>
-<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="co">#&gt; (Intercept)                0.95       825538         558.3174</span></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co">#&gt;   selection_stability opt_numtrees computation_time</span></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="co">#&gt; 1                0.95       825538         558.3174</span></span>
 <span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="fu">estimate_numtrees</span>(optRF_result_2, <span class="at">measure=</span><span class="st">&quot;selection&quot;</span>, <span class="at">for_stability=</span><span class="fl">0.99</span>)</span>
-<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="co">#&gt;             selection_stability opt_numtrees computation_time</span></span>
-<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="co">#&gt; (Intercept)                0.99     17701448         11969.31</span></span></code></pre></div>
+<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="co">#&gt;   selection_stability opt_numtrees computation_time</span></span>
+<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="co">#&gt; 1                0.99     17701448         11969.31</span></span></code></pre></div>
 <p>The output of <code>estimate_numtrees</code> provides the desired
 selection stability, the required number of trees, and the estimated
 computation time for computing random forest with that number of trees.
@@ -730,8 +730,8 @@ stability between 0.9 and 0.95. However, to publish exact stability
 metrics, we can use the <code>estimate_stability</code> function with
 the chosen number of trees:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">estimate_stability</span>(optRF_result_2, <span class="at">with_num.trees=</span><span class="dv">250000</span>)</span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co">#&gt;             num.trees prediction_stability selection_stability computation_time</span></span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="co">#&gt; (Intercept)    250000            0.9976854           0.9089737         169.1556</span></span></code></pre></div>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co">#&gt;   num.trees prediction_stability selection_stability computation_time</span></span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="co">#&gt; 1    250000            0.9976854           0.9089737         169.1556</span></span></code></pre></div>
 <p>The results indicate that when making predictions with 250,000 trees
 and this data set, the prediction stability is 0.998 and the selection
 stability is 0.909. These values now give others the possibility to
